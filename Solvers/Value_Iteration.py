@@ -70,8 +70,19 @@ class ValueIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            actions = self.env.P[each_state].items() # get list of actions in this state
+            v_cur = None
+            for action , env_ in actions: # iterate through all actions
+                v_act = 0
+                for i in range(len(env_)): # calculate the expectation of action
+                    prob, next_state, reward, done = env_[i]
+                    v_act += prob*(reward + self.options.gamma*(self.V[next_state]))
+                if v_cur is not None:
+                    v_cur = max(v_cur,v_act )
+                else:
+                    v_cur = v_act
+            self.V[each_state] = v_cur
 
-        # Dont worry about this part
         self.statistics[Statistics.Rewards.value] = np.sum(self.V)
         self.statistics[Statistics.Steps.value] = -1
 
@@ -139,8 +150,13 @@ class ValueIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            
-
+            values = self.one_step_lookahead(state)
+            return np.argmax(values)
+            # action_prob = np.zeros(len(values))
+            # action_prob[np.argmax(values)] = 1
+            # print("V", values)
+            # print("A", action_prob)
+            # return action_prob.tolist()
         return policy_fn
 
 
@@ -191,6 +207,21 @@ class AsynchVI(ValueIteration):
         # Do a one-step lookahead to find the best action       #
         # Update the value function. Ref: Sutton book eq. 4.10. #
         #########################################################
+
+        state = self.pq.pop()
+        v_act = np.zeros(self.env.action_space.n)
+        for a in range(self.env.action_space.n):
+            for prob, next_state, reward, done in self.env.P[state][a]:
+                v_act[a] += prob*(reward + self.options.gamma*(self.V[next_state]))
+        self.V[state] = np.max(v_act)
+
+        for s_ in self.pred[state]:
+            A = np.zeros(self.env.action_space.n)
+            for a in range(self.env.action_space.n):
+                for prob, next_state, reward, done in self.env.P[s_][a]:
+                    A[a] += prob*(reward + self.options.gamma *(self.V[next_state]))
+            max_A = np.max(A)
+            self.pq.update(s_, -abs(self.V[s_] - max_A))
 
         # you can ignore this part
         self.statistics[Statistics.Rewards.value] = np.sum(self.V)

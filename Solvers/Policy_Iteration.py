@@ -39,14 +39,17 @@ class PolicyIteration(AbstractSolver):
         self.policy_eval()
 
         # For each state...
-        for s in range(self.env.observation_space.n):
+        # for s in range(self.env.observation_space.n):
             # Find the best action by one-step lookahead
             # Ties are resolved by returning the first action with maximum value (Hint: use max/argmax directly).
 
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-
+        for s in range(self.env.observation_space.n):
+            action = self.one_step_lookahead(s)
+            self.policy[s] = np.zeros([self.env.action_space.n])
+            self.policy[s][np.argmax(action)] = 1
 
         # In DP methods we don't interact with the environment so we will set the reward to be the sum of state values
         # and the number of steps to -1 representing an invalid value
@@ -90,6 +93,18 @@ class PolicyIteration(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        # print(self.policy)
+        matrix = np.zeros([self.env.observation_space.n, self.env.observation_space.n])
+        B = np.zeros([self.env.observation_space.n])
+        for state in range(self.env.observation_space.n):
+            matrix[state][state] = -1
+            for action in range(self.env.action_space.n):
+                if self.policy[state][action] > 0:
+                    for prob, next_state, reward, done in self.env.P[state][action]:
+                            matrix[state][next_state] += prob * self.options.gamma
+                            B[state] += -(prob * reward)
+        self.V = np.linalg.solve(matrix, B)
+        # print(res)
 
     def create_greedy_policy(self):
         """
