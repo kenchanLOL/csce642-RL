@@ -5,14 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: RL Assignment",
             "type": "python",
             "request": "launch",
             // "program": "${file}",
             "program": "run.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-s", "pi", "-d", "Gridworld", "-e", "100", "-g", "0.4"]
+            "args": ["-s", "mc", "-d", "Blackjack", "-e", "500000", "-g", "1.0", "-p", "0.1"]
         }
     ]
 }

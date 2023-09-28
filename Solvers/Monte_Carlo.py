@@ -65,6 +65,10 @@ class MonteCarlo(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        # probs = self.policy(state)
+        # action = np.random.choice(np.arange(len(probs)), p = probs)
+        # next_state, reward, done, _  = self.step(action)
+        
 
     def __str__(self):
         return "Monte Carlo"
@@ -90,7 +94,8 @@ class MonteCarlo(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-
+            action_prob = np.zeros((nA))
+            # A_star = np.max(self.Q)
         return policy_fn
 
     def create_greedy_policy(self):
@@ -109,6 +114,7 @@ class MonteCarlo(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            print(state)
 
 
         return policy_fn
