@@ -66,10 +66,25 @@ class MonteCarlo(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-        # probs = self.policy(state)
-        # action = np.random.choice(np.arange(len(probs)), p = probs)
-        # next_state, reward, done, _  = self.step(action)
-        
+        steps = self.options.steps
+        for i in range(steps):
+            probs = self.policy(state)
+            action = np.random.choice(np.arange(len(probs)), p = probs)
+            next_state, reward, done, _  = self.step(action)
+            episode.append((state, action, reward))
+            if done:
+                break
+            else:
+                state = next_state
+        for i in range(len(episode) - 1, -1, -1):
+            state, action, reward = episode[i]
+            if i == len(episode) - 1:
+                returns = reward
+            else:
+                returns = reward + discount_factor ** (len(episode)-1 - i) * episode[i+1][2]
+            self.returns_count[(state, action)] += 1
+            self.returns_sum[(state, action)] += returns
+            self.Q[state][action] = self.returns_sum[(state, action)] / self.returns_count[(state, action)]
 
     def __str__(self):
         return "Monte Carlo"
@@ -95,8 +110,17 @@ class MonteCarlo(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            # print(observation)
             action_prob = np.zeros((nA))
-            # A_star = np.max(self.Q)
+            q_values = self.Q[observation]
+            indices = np.where(q_values == np.max(q_values))[0]
+            a_star_prob = (1 - self.options.epsilon + len(indices)*self.options.epsilon / nA) / len(indices)
+            for a in range(nA):
+                if a not in indices:
+                    action_prob[a] = self.options.epsilon / self.env.action_space.n
+                else:
+                    action_prob[a] = a_star_prob
+            return action_prob
         return policy_fn
 
     def create_greedy_policy(self):
@@ -115,7 +139,8 @@ class MonteCarlo(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            print(state)
+            # print(state)
+            return np.argmax(self.Q[state])
 
 
         return policy_fn
