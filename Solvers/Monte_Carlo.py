@@ -140,6 +140,10 @@ class MonteCarlo(AbstractSolver):
             #   YOUR IMPLEMENTATION HERE   #
             ################################
             # print(state)
+            # A = np.zeros_like(self.Q[state], dtype=float)
+            # best_action = np.argmax(self.Q[state])
+            # A[best_action] = 1.0
+            # return A
             return np.argmax(self.Q[state])
 
 
@@ -178,7 +182,7 @@ class OffPolicyMC(MonteCarlo):
         Run a single episode of Monte Carlo Control Off-Policy Control using Weighted Importance Sampling.
 
         Use:
-            elf.env: OpenAI environment.
+            self.env: OpenAI environment.
             self.options.steps: steps per episode
             self.behavior_policy(state): returns a soft policy which is the
                 behavior policy (act according to this policy)
@@ -191,11 +195,34 @@ class OffPolicyMC(MonteCarlo):
         episode = []
         # Reset the environment
         state, _ = self.env.reset()
-
+        discount_factor = self.options.gamma
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-        
+        steps = self.options.steps
+        for i in range(steps):
+            probs = self.behavior_policy(state)
+            action = np.random.choice(np.arange(len(probs)), p = probs)
+            next_state, reward, done, _  = self.step(action)
+            episode.append((state, action, reward))
+            if done:
+                break
+            else:
+                state = next_state
+        W = 1
+        G = 0
+        for i in range(len(episode) - 1, -1, -1):
+            state, action, reward = episode[i]
+            G = reward + discount_factor * G
+            self.C[state][action] += W
+            self.Q[state][action] += W / self.C[state][action] * (G - self.Q[state][action])
+            if action != self.target_policy(state):
+                break
+            W = W*1. / self.behavior_policy(state)[action]
+
+            # self.returns_count[(state, action)] += 1
+            # self.returns_sum[(state, action)] += returns
+            # self.Q[state][action] = self.returns_sum[(state, action)] / self.returns_count[(state, action)]
 
     def create_random_policy(self):
         """
