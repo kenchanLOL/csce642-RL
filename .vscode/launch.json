@@ -12,7 +12,7 @@
             "program": "run.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-s", "mc", "-d", "Blackjack", "-e", "500000", "-g", "1.0", "-p", "0.1"]
+            "args": ["-s", "ql", "-d", "CliffWalking", "-e", "500", "-g", "1.0", "-a", "0.5", "-p", "0.1"]
         }
     ]
 }

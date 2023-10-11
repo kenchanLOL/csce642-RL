@@ -50,10 +50,17 @@ class QLearning(AbstractSolver):
 
         # Reset the environment
         state, _ = self.env.reset()
-
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        for i in range(self.options.steps):
+            probs =  self.epsilon_greedy_action(state)
+            action = np.random.choice(np.arange(len(probs)), p = probs)
+            next_state, reward, done, _ = self.step(action) # take action ang get next state, reward
+            self.Q[state][action] += self.options.alpha * (reward + self.options.gamma * (self.Q[next_state][np.argmax(self.Q[next_state])] - self.Q[state][action])) #TD difference 
+            state = next_state
+            if done:
+                break
 
     def __str__(self):
         return "Q-Learning"
@@ -75,6 +82,7 @@ class QLearning(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            return np.argmax(self.Q[state])
 
         return policy_fn
 
@@ -92,6 +100,17 @@ class QLearning(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n
+        q_values = self.Q[state]
+        action_prob = np.zeros((nA))
+        indices = np.argmax(q_values)
+        a_star_prob = (1 - self.options.epsilon + self.options.epsilon / nA) 
+        for a in range(nA):
+            if a != indices:
+                action_prob[a] = self.options.epsilon / self.env.action_space.n
+            else:
+                action_prob[a] = a_star_prob
+        return action_prob
 
 
 class ApproxQLearning(QLearning):
@@ -150,13 +169,13 @@ class ApproxQLearning(QLearning):
         """
         nA = self.env.action_space.n
 
-        def policy_fn(state):
+        # def policy_fn(state):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
             
 
-        return policy_fn
+        # return policy_fn
 
     def plot(self, stats, smoothing_window=20, final=False):
         plotting.plot_episode_stats(stats, smoothing_window, final=final)
