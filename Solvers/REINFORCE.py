@@ -76,7 +76,13 @@ class Reinforce(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-
+        returns = np.zeros_like(rewards, dtype = np.float64)
+        G_t = 0
+        for i in range(len(rewards) - 1, -1, -1):
+            G_t = rewards[i] + gamma * G_t
+            returns[i] = G_t
+        return returns.tolist()
+    
     def select_action(self, state):
         """
         Selects an action given state.
@@ -127,7 +133,6 @@ class Reinforce(AbstractSolver):
             self.step(action): Performs an action in the env.
             self.update_model(rewards, action_probs, baselines): Update the model.
         """
-
         state, _ = self.env.reset()
         rewards = []  # Reward per step
         action_probs = []  # Action probability
@@ -138,6 +143,17 @@ class Reinforce(AbstractSolver):
             # Run update_model() only ONCE #
             # at the END of an episode.    #
             ################################
+            action, action_prob, baseline = self.select_action(state)
+            next_state, reward, done, _  = self.step(action)
+
+            rewards.append(reward)
+            action_probs.append(action_prob)
+            baselines.append(baseline)
+            state = next_state
+            if done:
+                break
+        self.update_model(rewards, action_probs, baselines)
+
 
 
     def pg_loss(self, advantage, prob):
@@ -159,10 +175,11 @@ class Reinforce(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-
+        return -torch.log(prob) * advantage
 
     def __str__(self):
         return "REINFORCE"
 
     def plot(self, stats, smoothing_window, final=False):
         plotting.plot_episode_stats(stats, smoothing_window, final=final)
+

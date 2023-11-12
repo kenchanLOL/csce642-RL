@@ -103,6 +103,20 @@ class DQN(AbstractSolver):
         ################################
 
 
+        nA = self.env.action_space.n
+        action_prob = np.zeros((nA))
+        state = torch.as_tensor(state)
+        q_values = self.model(state)
+        indices = torch.argmax(q_values)
+        a_star_prob = 1 - self.options.epsilon + self.options.epsilon / nA
+        for a in range(nA):
+            if a not in indices:
+                action_prob[a] = self.options.epsilon / self.env.action_space.n
+            else:
+                action_prob[a] = a_star_prob
+        return action_prob
+
+
     def compute_target_values(self, next_states, rewards, dones):
         """
         Computes the target q values.
@@ -113,6 +127,13 @@ class DQN(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+
+        # y_i = np.zeros_like(rewards)
+        # y_i[dones == 1] = rewards[dones == 1]
+        # y_i[dones != 1] = rewards[dones != 1] + self.options.gamma*torch.max(self.target_model(next_states[dones != 1]), axis = -1).values
+        y_i= rewards + (1 - dones) * self.options.gamma*torch.max(self.target_model(next_states), axis = -1).values
+
+        return torch.as_tensor(y_i)
 
 
     def replay(self):
@@ -183,11 +204,23 @@ class DQN(AbstractSolver):
 
         # Reset the environment
         state, _ = self.env.reset()
-
-        for _ in range(self.options.steps):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
+        # self.replay_memory = deque(maxlen=self.options.replay_memory_size)
+        ################################
+        #   YOUR IMPLEMENTATION HERE   #
+        ################################
+        for t in range(self.options.steps):
+            action_prob = self.epsilon_greedy(state)
+            action = np.random.choice(np.arange(self.env.action_space.n), p = action_prob)
+            next_state, reward, done, _  = self.step(action)
+            self.memorize(state, action, reward, next_state, done)
+            self.replay()
+            if t % self.options.update_target_estimator_every == 0:
+                self.update_target_model()
+            state = next_state
+            if done:
+            #     # self.update_target_model()
+                break
+            # self.options.update_target_estimator_every
 
 
     def __str__(self):

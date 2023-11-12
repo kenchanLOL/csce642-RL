@@ -57,7 +57,7 @@ class QLearning(AbstractSolver):
             probs =  self.epsilon_greedy_action(state)
             action = np.random.choice(np.arange(len(probs)), p = probs)
             next_state, reward, done, _ = self.step(action) # take action ang get next state, reward
-            self.Q[state][action] += self.options.alpha * (reward + self.options.gamma * (self.Q[next_state][np.argmax(self.Q[next_state])] - self.Q[state][action])) #TD difference 
+            self.Q[state][action] += self.options.alpha * (reward + self.options.gamma * (self.Q[next_state][np.argmax(self.Q[next_state])]) - self.Q[state][action]) #TD difference 
             state = next_state
             if done:
                 break
@@ -140,6 +140,17 @@ class ApproxQLearning(QLearning):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        for i in range(self.options.steps):
+            probs =  self.epsilon_greedy(state)
+            action = np.random.choice(np.arange(len(probs)), p = probs)
+            q_value = self.estimator.predict(state, action)
+            next_state, reward, done, _ = self.step(action) # take action ang get next state, reward
+            next_q = [self.estimator.predict(next_state, a) for a in range(self.env.action_space.n)]
+            q_value += self.options.alpha * (reward + self.options.gamma * (np.max(next_q)) - q_value) #TD difference 
+            self.estimator.update(state, action, q_value)
+            state = next_state
+            if done:
+                break
 
     def __str__(self):
         return "Approx Q-Learning"
@@ -158,6 +169,22 @@ class ApproxQLearning(QLearning):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n
+        q_values = []
+        for i in range(nA):
+            q_values.append(self.estimator.predict(state, i))
+        action_prob = np.zeros((nA))
+        # indices = np.where(q_values == np.max(q_values))[0]
+        # a_star_prob = (1 - self.options.epsilon + len(indices)*self.options.epsilon / nA) / len(indices)
+        indices = np.argmax(q_values)
+        a_star_prob = (1 - self.options.epsilon + self.options.epsilon / nA) 
+        for a in range(nA):
+            if a != indices:
+            # if a not in indices:
+                action_prob[a] = self.options.epsilon / self.env.action_space.n
+            else:
+                action_prob[a] = a_star_prob
+        return action_prob
 
     def create_greedy_policy(self):
         """
@@ -169,13 +196,14 @@ class ApproxQLearning(QLearning):
         """
         nA = self.env.action_space.n
 
-        # def policy_fn(state):
+        def policy_fn(state):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            q_val = [self.estimator.predict(state, a) for a in range(self.env.action_space.n)]
+            return np.argmax(q_val)
             
-
-        # return policy_fn
+        return policy_fn
 
     def plot(self, stats, smoothing_window=20, final=False):
         plotting.plot_episode_stats(stats, smoothing_window, final=final)

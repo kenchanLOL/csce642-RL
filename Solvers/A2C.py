@@ -63,7 +63,6 @@ class A2C(AbstractSolver):
             A function that takes an observation as input and returns a vector
             of action probabilities.
         """
-
         def policy_fn(state):
             state = torch.as_tensor(state, dtype=torch.float32)
             return torch.argmax(self.actor_critic(state)[0]).detach().numpy()
@@ -128,9 +127,21 @@ class A2C(AbstractSolver):
             #   YOUR IMPLEMENTATION HERE   #
             # Run update_actor_critic()    #
             # only ONCE at EACH step in    #
-            # an episode.                  # 
+            # an episode.                  #
             ################################
-
+            action, action_prob, state_critic = self.select_action(state)
+            next_state, reward, done, _ = self.step(action)
+            next_state = torch.as_tensor(next_state, dtype = torch.float32)
+            next_action_prob, next_state_critic = self.actor_critic(next_state)
+            next_state_critic = 0 if done else next_state_critic
+            advantage = reward + self.options.gamma * next_state_critic - state_critic
+            advantage = torch.as_tensor(advantage, dtype = torch.float32)
+            action_prob = torch.as_tensor(action_prob, dtype = torch.float32)
+            state_critic = torch.as_tensor(state_critic, dtype = torch.float32)
+            self.update_actor_critic(advantage, action_prob, state_critic)
+            state = next_state
+            if done:
+                break
     def actor_loss(self, advantage, prob):
         """
         The policy gradient loss function.
@@ -149,7 +160,8 @@ class A2C(AbstractSolver):
         """
         ################################
         #   YOUR IMPLEMENTATION HERE   #
-        ################################)
+        ################################
+        return - advantage * torch.log(prob)
 
     def critic_loss(self, advantage, value):
         """
@@ -165,6 +177,7 @@ class A2C(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        return - advantage * value
 
     def __str__(self):
         return "A2C"

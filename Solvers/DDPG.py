@@ -154,7 +154,8 @@ class DDPG(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-
+        next_actions = self.target_actor_critic.pi(next_states)
+        return rewards + self.options.gamma * (1-dones) * self.target_actor_critic.q(next_states, next_actions)
 
     def replay(self):
         """
@@ -220,7 +221,14 @@ class DDPG(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            
+            action = self.select_action(state)
+            next_state, reward, done, _ = self.step(action)
+            self.memorize(state, action, reward, next_state, done)
+            self.replay()
+            self.update_target_networks()
+            state = next_state
+            if done:
+                break            
 
     def q_loss(self, current_q, target_q):
         """
@@ -236,6 +244,7 @@ class DDPG(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        return  (current_q - target_q)**2
 
     def pi_loss(self, states):
         """
@@ -258,7 +267,9 @@ class DDPG(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-
+        next_actions = self.actor_critic.pi(states)
+        return - self.actor_critic.q(states, next_actions)
+    
     def __str__(self):
         return "DDPG"
 
